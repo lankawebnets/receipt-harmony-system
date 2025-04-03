@@ -22,9 +22,9 @@ const Sidebar = ({ isOpen }) => {
     canManageUsers
   } = useAuth();
   
-  // Base styles for the sidebar
+  // Base styles for the sidebar - adjusted to be fixed position
   const sidebarClasses = cn(
-    "fixed h-full bg-sidebar border-r border-sidebar-border transition-all duration-300 z-10 overflow-y-auto",
+    "fixed top-0 left-0 h-full bg-sidebar border-r border-sidebar-border transition-all duration-300 z-20 overflow-y-auto",
     isOpen ? "w-64" : "w-16"
   );
   
@@ -38,7 +38,7 @@ const Sidebar = ({ isOpen }) => {
         <div className="flex items-center justify-center md:justify-start">
           <span className={cn(
             "font-bold text-lg text-sidebar-foreground transition-opacity",
-            isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
+            isOpen ? "opacity-100" : "opacity-0 hidden md:inline"
           )}>
             Revenue Management
           </span>
