@@ -38,8 +38,8 @@ const Reports = () => {
   // State for form inputs
   const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [endDate, setEndDate] = useState(new Date());
-  const [institutionId, setInstitutionId] = useState("");
-  const [typeId, setTypeId] = useState("");
+  const [institutionId, setInstitutionId] = useState("all");
+  const [typeId, setTypeId] = useState("all");
   
   // State for report data
   const [report, setReport] = useState(null);
@@ -49,8 +49,8 @@ const Reports = () => {
     const reportData = generateReport(
       format(startDate, 'yyyy-MM-dd'),
       format(endDate, 'yyyy-MM-dd'),
-      institutionId ? parseInt(institutionId) : null,
-      typeId ? parseInt(typeId) : null
+      institutionId !== "all" ? parseInt(institutionId) : null,
+      typeId !== "all" ? parseInt(typeId) : null
     );
     
     setReport(reportData);
@@ -374,7 +374,7 @@ const Reports = () => {
                   <SelectValue placeholder="All Institutions" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Institutions</SelectItem>
+                  <SelectItem value="all">All Institutions</SelectItem>
                   {institutions.map((institution) => (
                     <SelectItem key={institution.id} value={institution.id.toString()}>
                       {institution.name}
@@ -394,7 +394,7 @@ const Reports = () => {
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   {receiptTypes.map((type) => (
                     <SelectItem key={type.id} value={type.id.toString()}>
                       {type.name}
