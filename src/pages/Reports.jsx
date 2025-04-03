@@ -12,7 +12,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { cn } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -22,9 +21,19 @@ import {
 } from "@/components/ui/select";
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import { useAuth } from '@/context/AuthContext';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const Reports = () => {
   const { generateReport, institutions, receiptTypes } = useData();
+  const { user } = useAuth();
   
   // State for form inputs
   const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
@@ -125,9 +134,10 @@ const Reports = () => {
       doc.setFontSize(8);
       doc.text(`Generated on ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 20, doc.internal.pageSize.height - 10);
       doc.text(`Page ${i} of ${pageCount}`, 170, doc.internal.pageSize.height - 10);
+      doc.text(`© ${new Date().getFullYear()} Revenue Management System`, 105, doc.internal.pageSize.height - 10, { align: 'center' });
     }
     
-    doc.save(`revenue-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    doc.save(`reconciliation-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
   };
   
   // Handle printing report
@@ -142,7 +152,7 @@ const Reports = () => {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Revenue Management Report</title>
+        <title>Revenue Management System - Reconciliation Statement</title>
         <style>
           body {
             font-family: Arial, sans-serif;
@@ -294,7 +304,7 @@ const Reports = () => {
   return (
     <div className="space-y-6 animate-in">
       <h1 className="text-3xl font-bold tracking-tight">
-        Reports & Analysis
+        Reconciliation Report
       </h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -303,7 +313,7 @@ const Reports = () => {
           <CardHeader>
             <CardTitle>Report Criteria</CardTitle>
             <CardDescription>
-              Select parameters to generate report.
+              Generate a reconciliation statement for a selected period.
             </CardDescription>
           </CardHeader>
           
@@ -355,7 +365,7 @@ const Reports = () => {
             </div>
             
             <div className="space-y-2">
-              <Label>Institution (Optional)</Label>
+              <Label>Institution</Label>
               <Select 
                 value={institutionId} 
                 onValueChange={setInstitutionId}
@@ -375,7 +385,7 @@ const Reports = () => {
             </div>
             
             <div className="space-y-2">
-              <Label>Receipt Type (Optional)</Label>
+              <Label>Receipt Type</Label>
               <Select 
                 value={typeId} 
                 onValueChange={setTypeId}
@@ -407,9 +417,9 @@ const Reports = () => {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Report Results</CardTitle>
+              <CardTitle>Reconciliation Statement</CardTitle>
               <CardDescription>
-                Financial summary and transaction details.
+                Financial summary for the selected period.
               </CardDescription>
             </div>
             
@@ -463,67 +473,63 @@ const Reports = () => {
                   </div>
                 </div>
                 
-                {/* Financial Summary */}
-                <div className="border rounded-md p-4 bg-muted/20">
-                  <h3 className="font-semibold mb-4">Financial Summary</h3>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Opening Balance</span>
-                      <span className="font-medium">LKR {report.openingBalance.toLocaleString()}</span>
-                    </div>
-                    
-                    <div className="flex justify-between">
-                      <span>Add: Total Receipts</span>
-                      <span className="font-medium text-green-600 dark:text-green-400">
-                        LKR {report.totalReceipts.toLocaleString()}
-                      </span>
-                    </div>
-                    
-                    <div className="flex justify-between">
-                      <span>Less: Total Payments</span>
-                      <span className="font-medium text-red-600 dark:text-red-400">
-                        LKR {report.totalPayments.toLocaleString()}
-                      </span>
-                    </div>
-                    
-                    <div className="border-t pt-2 mt-2">
-                      <div className="flex justify-between font-semibold">
-                        <span>Closing Balance</span>
-                        <span className={
-                          report.closingBalance >= 0
-                            ? "text-blue-600 dark:text-blue-400"
-                            : "text-red-600 dark:text-red-400"
-                        }>
-                          LKR {report.closingBalance.toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {/* Financial Summary - Reconciliation Style */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Reconciliation Statement</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-medium">Opening Balance</TableCell>
+                          <TableCell className="text-right">LKR {report.openingBalance.toLocaleString()}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium text-green-600 dark:text-green-400">Add: Total Receipts</TableCell>
+                          <TableCell className="text-right text-green-600 dark:text-green-400">LKR {report.totalReceipts.toLocaleString()}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium text-red-600 dark:text-red-400">Less: Total Payments</TableCell>
+                          <TableCell className="text-right text-red-600 dark:text-red-400">LKR {report.totalPayments.toLocaleString()}</TableCell>
+                        </TableRow>
+                        <TableRow className="border-t-2">
+                          <TableCell className="font-bold">Closing Balance</TableCell>
+                          <TableCell className={`text-right font-bold ${
+                            report.closingBalance >= 0
+                              ? "text-blue-600 dark:text-blue-400"
+                              : "text-red-600 dark:text-red-400"
+                          }`}>
+                            LKR {report.closingBalance.toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
                 
                 {/* Transaction Details */}
                 <div>
                   <h3 className="font-semibold mb-4">Transaction Details</h3>
                   
-                  <div className="overflow-x-auto border rounded-md">
-                    <table className="w-full">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="text-left p-2 font-medium">Date</th>
-                          <th className="text-left p-2 font-medium">Type</th>
-                          <th className="text-left p-2 font-medium">Institution</th>
-                          <th className="text-left p-2 font-medium">Category</th>
-                          <th className="text-right p-2 font-medium">Amount (LKR)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Institution</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead className="text-right">Amount (LKR)</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {report.transactions.map((transaction) => (
-                          <tr key={transaction.id} className="border-t hover:bg-muted/50">
-                            <td className="p-2">
+                          <TableRow key={transaction.id}>
+                            <TableCell>
                               {format(new Date(transaction.date), 'dd/MM/yyyy')}
-                            </td>
-                            <td className="p-2">
+                            </TableCell>
+                            <TableCell>
                               <span className={`px-2 py-1 rounded text-xs ${
                                 transaction.transactionType === 'receipt' 
                                   ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
@@ -531,34 +537,34 @@ const Reports = () => {
                               }`}>
                                 {transaction.transactionType === 'receipt' ? 'Receipt' : 'Payment'}
                               </span>
-                            </td>
-                            <td className="p-2">
+                            </TableCell>
+                            <TableCell>
                               {transaction.institutionName}
-                            </td>
-                            <td className="p-2">
+                            </TableCell>
+                            <TableCell>
                               {transaction.typeName}
-                            </td>
-                            <td className="p-2 text-right font-medium">
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
                               {transaction.amount.toLocaleString()}
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         ))}
                         
                         {report.transactions.length === 0 && (
-                          <tr>
-                            <td colSpan="5" className="p-4 text-center text-muted-foreground">
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                               No transactions found for the selected criteria.
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         )}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>Select criteria and generate report to view results.</p>
+              <div className="text-center py-12 text-muted-foreground">
+                <p>Select criteria and generate report to view reconciliation statement.</p>
               </div>
             )}
           </CardContent>
