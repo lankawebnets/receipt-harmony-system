@@ -1,73 +1,133 @@
-# Welcome to your Lovable project
 
-## Project info
+# Revenue Management System
 
-**URL**: https://lovable.dev/projects/954404e8-aab3-45c4-9c38-04602bae39fa
+A complete revenue management system with MySQL backend.
 
-## How can I edit this code?
+## Project Structure
 
-There are several ways of editing your application.
+- `/server` - Express backend API connected to MySQL
+- `/src` - React frontend application
 
-**Use Lovable**
+## Prerequisites
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/954404e8-aab3-45c4-9c38-04602bae39fa) and start prompting.
+- Node.js (v14 or later)
+- MySQL (v8 or later)
 
-Changes made via Lovable will be committed automatically to this repo.
+## Step-by-Step Setup Instructions
 
-**Use your preferred IDE**
+### 1. Set up MySQL
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. Install MySQL if you haven't already:
+   - [Download MySQL](https://dev.mysql.com/downloads/installer/)
+   - During installation, set your root password (remember this)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+2. Make sure MySQL service is running on your computer:
+   - On Windows: Check Services app to ensure MySQL is running
+   - On Mac: Check via System Preferences → MySQL
+   - On Linux: `sudo systemctl status mysql`
 
-Follow these steps:
+### 2. Set up the Backend
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. Navigate to the server directory:
+   ```
+   cd server
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. Install backend dependencies:
+   ```
+   npm install
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. Create a `.env` file in the server directory with your MySQL credentials:
+   ```
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASSWORD=your_mysql_password
+   DB_NAME=revenue_management
+   JWT_SECRET=your_jwt_secret_key_change_this_in_production
+   PORT=3001
+   ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+4. Set up the database:
+   ```
+   node setup/setupDatabase.js
+   ```
+   
+   This command will:
+   - Create the revenue_management database
+   - Create all necessary tables
+   - Seed the database with initial data
 
-**Edit a file directly in GitHub**
+5. Start the backend server:
+   ```
+   npm start
+   ```
+   
+   or for development with auto-reload:
+   ```
+   npm run dev
+   ```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+   The server should start running on http://localhost:3001
 
-**Use GitHub Codespaces**
+### 3. Set up the Frontend
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. Open a new terminal and navigate to the project root
 
-## What technologies are used for this project?
+2. Install frontend dependencies:
+   ```
+   npm install
+   ```
 
-This project is built with:
+3. Start the frontend development server:
+   ```
+   npm run dev
+   ```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+   The React app should start and be available at http://localhost:5173
 
-## How can I deploy this project?
+### 4. Access the Application
 
-Simply open [Lovable](https://lovable.dev/projects/954404e8-aab3-45c4-9c38-04602bae39fa) and click on Share -> Publish.
+1. Open your browser and navigate to http://localhost:5173
+2. Login with one of the predefined users:
+   - Super Admin: username `admin`, password `admin123`
+   - Manager: username `manager`, password `manager123`
+   - Data Entry: username `data`, password `data123`
 
-## Can I connect a custom domain to my Lovable project?
+## Database Schema
 
-Yes it is!
+The system uses the following tables:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. `users` - User accounts and authentication
+2. `institutions` - Organizations or departments
+3. `receipt_types` - Categories of receipts and payments
+4. `transactions` - Receipt and payment transactions
+5. `settings` - System settings like opening balance
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Troubleshooting
+
+### MySQL Connection Issues
+
+1. Ensure MySQL service is running
+2. Verify MySQL credentials in your `.env` file
+3. Try connecting to MySQL manually:
+   ```
+   mysql -u root -p
+   ```
+4. Ensure the MySQL user has all required permissions:
+   ```sql
+   GRANT ALL PRIVILEGES ON revenue_management.* TO 'root'@'localhost';
+   FLUSH PRIVILEGES;
+   ```
+
+### Backend Server Issues
+
+1. Check for errors in the terminal running the backend
+2. Verify that port 3001 is not used by another application
+3. Make sure all required environment variables are set
+
+### Frontend Connection Issues
+
+1. Ensure the backend server is running
+2. Check browser console for any CORS or network errors
+3. Verify that the API_URL in `src/services/api.js` is correct
