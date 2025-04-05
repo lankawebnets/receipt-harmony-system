@@ -1,7 +1,14 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { INSTITUTIONS, RECEIPT_TYPES, TRANSACTIONS, USERS } from '../lib/constants';
 import { useAuth } from './AuthContext';
+import { 
+  institutionService, 
+  receiptTypeService, 
+  transactionService, 
+  userService,
+  reportService,
+  backupService
+} from '../services/api';
 import { toast } from '@/components/ui/use-toast';
 
 const DataContext = createContext(null);
@@ -12,234 +19,362 @@ export const DataProvider = ({ children }) => {
   const { user } = useAuth();
   
   // State for institutions
-  const [institutions, setInstitutions] = useState(INSTITUTIONS);
+  const [institutions, setInstitutions] = useState([]);
   
   // State for receipt types
-  const [receiptTypes, setReceiptTypes] = useState(RECEIPT_TYPES);
+  const [receiptTypes, setReceiptTypes] = useState([]);
   
   // State for users
-  const [users, setUsers] = useState(USERS);
+  const [users, setUsers] = useState([]);
   
   // State for transactions
-  const [transactions, setTransactions] = useState(TRANSACTIONS);
+  const [transactions, setTransactions] = useState([]);
 
-  // State for tracking opening balance (in a real app, this would come from the database)
+  // State for tracking opening balance
   const [openingBalance, setOpeningBalance] = useState(10000);
+
+  // Loading state
+  const [loading, setLoading] = useState({
+    institutions: true,
+    receiptTypes: true,
+    users: true,
+    transactions: true
+  });
+
+  // Load institutions from API
+  useEffect(() => {
+    const fetchInstitutions = async () => {
+      try {
+        setLoading(prev => ({ ...prev, institutions: true }));
+        const data = await institutionService.getAll();
+        setInstitutions(data);
+      } catch (error) {
+        console.error('Error fetching institutions:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load institutions',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(prev => ({ ...prev, institutions: false }));
+      }
+    };
+
+    if (user) {
+      fetchInstitutions();
+    }
+  }, [user]);
+
+  // Load receipt types from API
+  useEffect(() => {
+    const fetchReceiptTypes = async () => {
+      try {
+        setLoading(prev => ({ ...prev, receiptTypes: true }));
+        const data = await receiptTypeService.getAll();
+        setReceiptTypes(data);
+      } catch (error) {
+        console.error('Error fetching receipt types:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load receipt types',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(prev => ({ ...prev, receiptTypes: false }));
+      }
+    };
+
+    if (user) {
+      fetchReceiptTypes();
+    }
+  }, [user]);
+
+  // Load users from API (only for super admin)
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (user?.role !== 'super_admin') return;
+      
+      try {
+        setLoading(prev => ({ ...prev, users: true }));
+        const data = await userService.getAll();
+        setUsers(data);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load users',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(prev => ({ ...prev, users: false }));
+      }
+    };
+
+    if (user) {
+      fetchUsers();
+    }
+  }, [user]);
+
+  // Load transactions from API
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        setLoading(prev => ({ ...prev, transactions: true }));
+        const data = await transactionService.getAll();
+        setTransactions(data);
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load transactions',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(prev => ({ ...prev, transactions: false }));
+      }
+    };
+
+    if (user) {
+      fetchTransactions();
+    }
+  }, [user]);
 
   // Get visible transactions for the current user
   const getVisibleTransactions = () => {
     if (!user) return [];
-    
-    // Super admin and manager can see all transactions
-    if (user.role === 'super_admin' || user.role === 'manager') {
-      return transactions;
-    }
-    
-    // Data entry operator can only see their own transactions
-    return transactions.filter(transaction => transaction.createdBy === user.id);
+    return transactions;
   };
 
   // Add institution
-  const addInstitution = (name) => {
-    const newId = institutions.length ? Math.max(...institutions.map(i => i.id)) + 1 : 1;
-    const newInstitution = { id: newId, name };
-    setInstitutions([...institutions, newInstitution]);
-    toast({
-      title: 'Institution added',
-      description: `${name} has been added successfully.`,
-    });
-    return newInstitution;
+  const addInstitution = async (name) => {
+    try {
+      const newInstitution = await institutionService.add(name);
+      setInstitutions([...institutions, newInstitution]);
+      toast({
+        title: 'Institution added',
+        description: `${name} has been added successfully.`,
+      });
+      return newInstitution;
+    } catch (error) {
+      console.error('Error adding institution:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to add institution',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
 
   // Update institution
-  const updateInstitution = (id, name) => {
-    setInstitutions(institutions.map(inst => 
-      inst.id === id ? { ...inst, name } : inst
-    ));
-    toast({
-      title: 'Institution updated',
-      description: `Institution has been updated to ${name}.`,
-    });
+  const updateInstitution = async (id, name) => {
+    try {
+      const updatedInstitution = await institutionService.update(id, name);
+      setInstitutions(institutions.map(inst => 
+        inst.id === id ? updatedInstitution : inst
+      ));
+      toast({
+        title: 'Institution updated',
+        description: `Institution has been updated to ${name}.`,
+      });
+      return updatedInstitution;
+    } catch (error) {
+      console.error('Error updating institution:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to update institution',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
 
   // Delete institution
-  const deleteInstitution = (id) => {
-    // Check if institution is used in any transaction
-    const isUsed = transactions.some(t => t.institutionId === id);
-    
-    if (isUsed) {
+  const deleteInstitution = async (id) => {
+    try {
+      await institutionService.delete(id);
+      setInstitutions(institutions.filter(inst => inst.id !== id));
       toast({
-        title: 'Cannot delete',
-        description: 'This institution is used in transactions and cannot be deleted.',
+        title: 'Institution deleted',
+        description: 'Institution has been deleted successfully.',
+      });
+      return true;
+    } catch (error) {
+      console.error('Error deleting institution:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to delete institution',
         variant: 'destructive',
       });
       return false;
     }
-    
-    setInstitutions(institutions.filter(inst => inst.id !== id));
-    toast({
-      title: 'Institution deleted',
-      description: 'Institution has been deleted successfully.',
-    });
-    return true;
   };
 
   // Add receipt type
-  const addReceiptType = (name) => {
-    const newId = receiptTypes.length ? Math.max(...receiptTypes.map(t => t.id)) + 1 : 1;
-    const newType = { id: newId, name };
-    setReceiptTypes([...receiptTypes, newType]);
-    toast({
-      title: 'Receipt type added',
-      description: `${name} has been added successfully.`,
-    });
-    return newType;
+  const addReceiptType = async (name) => {
+    try {
+      const newType = await receiptTypeService.add(name);
+      setReceiptTypes([...receiptTypes, newType]);
+      toast({
+        title: 'Receipt type added',
+        description: `${name} has been added successfully.`,
+      });
+      return newType;
+    } catch (error) {
+      console.error('Error adding receipt type:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to add receipt type',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
 
   // Update receipt type
-  const updateReceiptType = (id, name) => {
-    setReceiptTypes(receiptTypes.map(type => 
-      type.id === id ? { ...type, name } : type
-    ));
-    toast({
-      title: 'Receipt type updated',
-      description: `Receipt type has been updated to ${name}.`,
-    });
+  const updateReceiptType = async (id, name) => {
+    try {
+      const updatedType = await receiptTypeService.update(id, name);
+      setReceiptTypes(receiptTypes.map(type => 
+        type.id === id ? updatedType : type
+      ));
+      toast({
+        title: 'Receipt type updated',
+        description: `Receipt type has been updated to ${name}.`,
+      });
+      return updatedType;
+    } catch (error) {
+      console.error('Error updating receipt type:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to update receipt type',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
 
   // Delete receipt type
-  const deleteReceiptType = (id) => {
-    // Check if receipt type is used in any transaction
-    const isUsed = transactions.some(t => t.typeId === id);
-    
-    if (isUsed) {
+  const deleteReceiptType = async (id) => {
+    try {
+      await receiptTypeService.delete(id);
+      setReceiptTypes(receiptTypes.filter(type => type.id !== id));
       toast({
-        title: 'Cannot delete',
-        description: 'This receipt type is used in transactions and cannot be deleted.',
+        title: 'Receipt type deleted',
+        description: 'Receipt type has been deleted successfully.',
+      });
+      return true;
+    } catch (error) {
+      console.error('Error deleting receipt type:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to delete receipt type',
         variant: 'destructive',
       });
       return false;
     }
-    
-    setReceiptTypes(receiptTypes.filter(type => type.id !== id));
-    toast({
-      title: 'Receipt type deleted',
-      description: 'Receipt type has been deleted successfully.',
-    });
-    return true;
   };
 
   // Add user
-  const addUser = (userData) => {
-    const newId = users.length ? Math.max(...users.map(u => u.id)) + 1 : 1;
-    const newUser = { id: newId, ...userData };
-    setUsers([...users, newUser]);
-    toast({
-      title: 'User added',
-      description: `${newUser.name} has been added successfully.`,
-    });
-    return newUser;
+  const addUser = async (userData) => {
+    try {
+      const newUser = await userService.add(userData);
+      setUsers([...users, newUser]);
+      toast({
+        title: 'User added',
+        description: `${newUser.name} has been added successfully.`,
+      });
+      return newUser;
+    } catch (error) {
+      console.error('Error adding user:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to add user',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
 
   // Update user
-  const updateUser = (id, userData) => {
-    setUsers(users.map(user => 
-      user.id === id ? { ...user, ...userData } : user
-    ));
-    toast({
-      title: 'User updated',
-      description: `User information has been updated.`,
-    });
+  const updateUser = async (id, userData) => {
+    try {
+      const updatedUser = await userService.update(id, userData);
+      setUsers(users.map(user => 
+        user.id === id ? updatedUser : user
+      ));
+      toast({
+        title: 'User updated',
+        description: `User information has been updated.`,
+      });
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to update user',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
 
   // Delete user
-  const deleteUser = (id) => {
-    // Check if user has created any transactions
-    const isUsed = transactions.some(t => t.createdBy === id);
-    
-    if (isUsed) {
+  const deleteUser = async (id) => {
+    try {
+      await userService.delete(id);
+      setUsers(users.filter(user => user.id !== id));
       toast({
-        title: 'Cannot delete',
-        description: 'This user has created transactions and cannot be deleted.',
+        title: 'User deleted',
+        description: 'User has been deleted successfully.',
+      });
+      return true;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to delete user',
         variant: 'destructive',
       });
       return false;
     }
-    
-    setUsers(users.filter(user => user.id !== id));
-    toast({
-      title: 'User deleted',
-      description: 'User has been deleted successfully.',
-    });
-    return true;
   };
 
   // Add transaction
-  const addTransaction = (transactionData) => {
-    const newId = transactions.length ? Math.max(...transactions.map(t => t.id)) + 1 : 1;
-    const newTransaction = { 
-      id: newId, 
-      ...transactionData,
-      createdBy: user.id 
-    };
-    setTransactions([...transactions, newTransaction]);
-    toast({
-      title: 'Transaction added',
-      description: `${transactionData.transactionType === 'receipt' ? 'Receipt' : 'Payment'} has been recorded successfully.`,
-    });
-    return newTransaction;
+  const addTransaction = async (transactionData) => {
+    try {
+      const newTransaction = await transactionService.add(transactionData);
+      setTransactions([...transactions, newTransaction]);
+      toast({
+        title: 'Transaction added',
+        description: `${transactionData.transactionType === 'receipt' ? 'Receipt' : 'Payment'} has been recorded successfully.`,
+      });
+      return newTransaction;
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to add transaction',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
 
   // Generate report for a given date range
-  const generateReport = (startDate, endDate, institutionId = null, typeId = null) => {
-    // Filter transactions by date range
-    let filteredTransactions = getVisibleTransactions().filter(t => 
-      t.date >= startDate && t.date <= endDate
-    );
-    
-    // Further filter by institution if specified
-    if (institutionId) {
-      filteredTransactions = filteredTransactions.filter(t => t.institutionId === institutionId);
+  const generateReport = async (startDate, endDate, institutionId = null, typeId = null) => {
+    try {
+      const reportData = await reportService.generate(startDate, endDate, institutionId, typeId);
+      return reportData;
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to generate report',
+        variant: 'destructive',
+      });
+      throw error;
     }
-    
-    // Further filter by type if specified
-    if (typeId) {
-      filteredTransactions = filteredTransactions.filter(t => t.typeId === typeId);
-    }
-    
-    // Calculate totals
-    const totalReceipts = filteredTransactions
-      .filter(t => t.transactionType === 'receipt')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    const totalPayments = filteredTransactions
-      .filter(t => t.transactionType === 'payment')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    const closingBalance = openingBalance + totalReceipts - totalPayments;
-    
-    // Format transactions with institution and type names
-    const formattedTransactions = filteredTransactions.map(t => ({
-      ...t,
-      institutionName: institutions.find(i => i.id === t.institutionId)?.name || 'Unknown',
-      typeName: receiptTypes.find(ty => ty.id === t.typeId)?.name || 'Unknown'
-    }));
-    
-    return {
-      transactions: formattedTransactions,
-      openingBalance,
-      totalReceipts,
-      totalPayments,
-      closingBalance,
-      startDate,
-      endDate,
-      institutionName: institutionId 
-        ? institutions.find(i => i.id === institutionId)?.name 
-        : 'All Institutions',
-      typeName: typeId 
-        ? receiptTypes.find(t => t.id === typeId)?.name 
-        : 'All Types'
-    };
   };
 
   // Function to get institution by ID
@@ -252,43 +387,55 @@ export const DataProvider = ({ children }) => {
     return receiptTypes.find(type => type.id === id) || null;
   };
 
-  // Backup database (in a real app, this would connect to backend API)
-  const backupDatabase = () => {
-    const backupData = {
-      institutions,
-      receiptTypes,
-      users,
-      transactions,
-      openingBalance,
-      timestamp: new Date().toISOString()
-    };
-    
-    // Create a blob and download it
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `revenue-management-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: 'Backup created',
-      description: 'Database backup has been downloaded successfully.',
-    });
+  // Backup database
+  const backupDatabase = async () => {
+    try {
+      const backupData = await backupService.export();
+      
+      // Create a blob and download it
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `revenue-management-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Backup created',
+        description: 'Database backup has been downloaded successfully.',
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to create backup',
+        variant: 'destructive',
+      });
+      return false;
+    }
   };
 
-  // Restore database from backup (in a real app, this would connect to backend API)
-  const restoreDatabase = (backupData) => {
+  // Restore database from backup
+  const restoreDatabase = async (backupData) => {
     try {
-      setInstitutions(backupData.institutions || []);
-      setReceiptTypes(backupData.receiptTypes || []);
-      setUsers(backupData.users || []);
-      setTransactions(backupData.transactions || []);
-      if (backupData.openingBalance !== undefined) {
-        setOpeningBalance(backupData.openingBalance);
+      await backupService.import(backupData);
+      
+      // Refresh all data
+      const institutions = await institutionService.getAll();
+      const receiptTypes = await receiptTypeService.getAll();
+      const transactions = await transactionService.getAll();
+      const users = user?.role === 'super_admin' ? await userService.getAll() : [];
+      
+      setInstitutions(institutions);
+      setReceiptTypes(receiptTypes);
+      setTransactions(transactions);
+      if (user?.role === 'super_admin') {
+        setUsers(users);
       }
       
       toast({
@@ -297,9 +444,10 @@ export const DataProvider = ({ children }) => {
       });
       return true;
     } catch (error) {
+      console.error('Error restoring database:', error);
       toast({
         title: 'Restore failed',
-        description: 'Failed to restore database from backup.',
+        description: error.response?.data?.message || 'Failed to restore database from backup.',
         variant: 'destructive',
       });
       return false;
@@ -313,6 +461,7 @@ export const DataProvider = ({ children }) => {
         receiptTypes,
         users,
         transactions: getVisibleTransactions(),
+        loading,
         addInstitution,
         updateInstitution,
         deleteInstitution,

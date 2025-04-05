@@ -32,7 +32,7 @@ const TransactionForm = ({ transactionType, onSuccess }) => {
   const [errors, setErrors] = useState({});
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate form
@@ -53,25 +53,29 @@ const TransactionForm = ({ transactionType, onSuccess }) => {
     // Clear any previous errors
     setErrors({});
     
-    // Create transaction
-    const newTransaction = {
-      date: format(date, 'yyyy-MM-dd'),
-      institutionId: parseInt(institutionId),
-      typeId: parseInt(typeId),
-      amount: parseFloat(amount),
-      transactionType
-    };
-    
-    addTransaction(newTransaction);
-    
-    // Reset form
-    setDate(today);
-    setInstitutionId('');
-    setTypeId('');
-    setAmount('');
-    
-    // Call success callback if provided
-    if (onSuccess) onSuccess();
+    try {
+      // Create transaction
+      const newTransaction = {
+        date: format(date, 'yyyy-MM-dd'),
+        institutionId: parseInt(institutionId),
+        typeId: parseInt(typeId),
+        amount: parseFloat(amount),
+        transactionType
+      };
+      
+      await addTransaction(newTransaction);
+      
+      // Reset form
+      setDate(today);
+      setInstitutionId('');
+      setTypeId('');
+      setAmount('');
+      
+      // Call success callback if provided
+      if (onSuccess) onSuccess();
+    } catch (error) {
+      console.error('Error submitting transaction:', error);
+    }
   };
 
   return (

@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TransactionForm from '@/components/TransactionForm';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 
 const Payments = () => {
   const { transactions, institutions, receiptTypes } = useData();
@@ -15,17 +15,14 @@ const Payments = () => {
   
   // Filter payments only
   const payments = transactions.filter(
-    transaction => transaction.transactionType === 'payment'
+    transaction => transaction.transaction_type === 'payment'
   );
   
   // Filter by search query
   const filteredPayments = payments.filter(payment => {
-    const institution = institutions.find(i => i.id === payment.institutionId);
-    const type = receiptTypes.find(t => t.id === payment.typeId);
-    
     const searchString = `
-      ${institution ? institution.name.toLowerCase() : ''}
-      ${type ? type.name.toLowerCase() : ''}
+      ${payment.institution_name ? payment.institution_name.toLowerCase() : ''}
+      ${payment.type_name ? payment.type_name.toLowerCase() : ''}
       ${payment.date.toLowerCase()}
       ${payment.amount.toString().toLowerCase()}
     `;
@@ -82,27 +79,22 @@ const Payments = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedPayments.map((payment) => {
-                      const institution = institutions.find(i => i.id === payment.institutionId);
-                      const type = receiptTypes.find(t => t.id === payment.typeId);
-                      
-                      return (
-                        <tr key={payment.id} className="border-t hover:bg-muted/50">
-                          <td className="p-2">
-                            {format(parseISO(payment.date), 'dd/MM/yyyy')}
-                          </td>
-                          <td className="p-2">
-                            {institution?.name || 'Unknown'}
-                          </td>
-                          <td className="p-2">
-                            {type?.name || 'Unknown'}
-                          </td>
-                          <td className="p-2 text-right font-medium">
-                            {payment.amount.toLocaleString()}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {sortedPayments.map((payment) => (
+                      <tr key={payment.id} className="border-t hover:bg-muted/50">
+                        <td className="p-2">
+                          {format(new Date(payment.date), 'dd/MM/yyyy')}
+                        </td>
+                        <td className="p-2">
+                          {payment.institution_name || 'Unknown'}
+                        </td>
+                        <td className="p-2">
+                          {payment.type_name || 'Unknown'}
+                        </td>
+                        <td className="p-2 text-right font-medium">
+                          {parseFloat(payment.amount).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
                     
                     {sortedPayments.length === 0 && (
                       <tr>
